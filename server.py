@@ -5,6 +5,7 @@ import time
 import threading
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -89,7 +90,7 @@ def scrape_rooms():
         if cached:
             return cached
 
-        resp = _http.get(ROOMS_PAGE, timeout=15)
+        resp = _http.get(ROOMS_PAGE, timeout=30)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
 
@@ -133,7 +134,7 @@ def scrape_rooms():
 
 # ---------- availability scraping ----------
 
-def scrape_availability(room_url: str, target_date: datetime | None = None, refresh: bool = False):
+def scrape_availability(room_url: str, target_date: Optional[datetime] = None, refresh: bool = False):
     if target_date is None:
         target_date = datetime.now()
 
@@ -160,7 +161,7 @@ def scrape_availability(room_url: str, target_date: datetime | None = None, refr
             fetch_str = fetch_date.strftime("%Y-%m-%d")
             full_url = f"{BASE_URL}{room_url}?selected_date={fetch_str}"
             try:
-                resp = _http.get(full_url, timeout=15)
+                resp = _http.get(full_url, timeout=30)
                 resp.raise_for_status()
             except Exception:
                 continue
@@ -270,7 +271,7 @@ def api_rooms():
 @app.route("/api/availability")
 def api_availability():
     date_param = request.args.get("date")
-    refresh = request.args.get("refresh", "").lower() in ("1", "true", "true", "yes")
+    refresh = request.args.get("refresh", "").lower() in ("1", "true", "yes")
 
     if date_param:
         try:
@@ -309,5 +310,27 @@ def api_availability():
 
 
 # ---------- start ----------
+def _warm_cache():
+    """Pre-warm room cache at startup so first request isn't slow."""
+    try:
+        rooms = scrape_rooms()
+        if rooms:
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            for room in rooms:
+                _cache_del(f"avail:{room['url']}:{today_str}")
+            # Scrape today's availability in background
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+                for room in rooms:
+                    pool.submit(scrape_availability, room["url"], datetime.now())
+            print(f"[warmup] cached {len(rooms)} rooms + today's availability")
+    except Exception as e:
+        print(f"[warmup] failed: {e}")
+
+
+# Warm cache in background (won't block gunicorn startup)
+threading.Thread(target=_warm_cache, daemon=True).start()
+
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_ENV", "production") == "development"
+    app.run(debug=debug, host="0.0.0.0", port=port)
