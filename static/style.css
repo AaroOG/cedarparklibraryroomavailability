@@ -1,0 +1,514 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #0d1117;
+  color: #e6edf3;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* ---------- Header ---------- */
+.header {
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  padding: 0.75rem 0;
+}
+
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header-left {
+  flex-shrink: 0;
+}
+
+.library-name {
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f0f6fc;
+  line-height: 1.2;
+}
+
+.library-subtitle {
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: #d4a017;
+  margin-top: 0.1rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.debug-btn {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #484f58;
+  border-radius: 4px;
+  background: #21262d;
+  color: #8b949e;
+  cursor: pointer;
+}
+
+.debug-btn:hover {
+  background: #30363d;
+  color: #e6edf3;
+}
+
+/* Day tabs in header */
+.header .day-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.header .day-tab {
+  padding: 0.25rem 0.6rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #8b949e;
+  text-align: center;
+  line-height: 1.2;
+  transition: all 0.15s;
+}
+
+.header .day-tab:hover {
+  color: #e6edf3;
+  background: #21262d;
+}
+
+.header .day-tab.active {
+  background: #d4a017;
+  color: #0d1117;
+  font-weight: 700;
+}
+
+.header .day-tab.past {
+  opacity: 0.5;
+}
+
+.header .day-tab-date {
+  display: block;
+  font-size: 0.6rem;
+  opacity: 0.7;
+}
+
+/* ---------- Summary Banner ---------- */
+.summary-banner {
+  background: #d4a017;
+  color: #0d1117;
+  text-align: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* ---------- Controls ---------- */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.room-types {
+  display: flex;
+  gap: 0.25rem;
+  background: #21262d;
+  border-radius: 8px;
+  padding: 0.25rem;
+}
+
+.tab {
+  padding: 0.35rem 0.85rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #8b949e;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: #e6edf3;
+}
+
+.tab.active {
+  background: #30363d;
+  color: #f0f6fc;
+}
+
+.date-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.date-picker label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #8b949e;
+  white-space: nowrap;
+}
+
+.date-picker input[type="date"] {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: #0d1117;
+  color: #e6edf3;
+  font-size: 0.8rem;
+}
+
+.date-picker input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+}
+
+.refresh-btn {
+  padding: 0.35rem 0.85rem;
+  border: 1px solid #d4a017;
+  border-radius: 6px;
+  background: transparent;
+  color: #d4a017;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.refresh-btn:hover {
+  background: #d4a017;
+  color: #0d1117;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Loading / Error ---------- */
+.loading,
+.error {
+  text-align: center;
+  padding: 3rem 1rem;
+  font-size: 1rem;
+  color: #8b949e;
+}
+
+.loading::after {
+  content: "";
+  display: inline-block;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-left: 0.5rem;
+  border: 2px solid #30363d;
+  border-top-color: #d4a017;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error {
+  color: #f85149;
+}
+
+.error button {
+  display: block;
+  margin: 0.75rem auto 0;
+  padding: 0.4rem 1.2rem;
+  border: 1px solid #f85149;
+  border-radius: 6px;
+  background: transparent;
+  color: #f85149;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.error button:hover {
+  background: #f85149;
+  color: #fff;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---------- Day Content ---------- */
+.day-content {
+  margin-bottom: 2rem;
+}
+
+.day-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- Room Card ---------- */
+.room-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.room-card-header {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid #21262d;
+}
+
+.room-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.room-card-info .room-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #f0f6fc;
+  text-decoration: none;
+  display: inline;
+}
+
+.room-card-info .room-name:hover {
+  color: #d4a017;
+}
+
+.room-type-label {
+  font-size: 0.75rem;
+  color: #8b949e;
+  margin-top: 0.15rem;
+}
+
+.room-card-badges {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.status-badge.open {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-badge.taken {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-badge.none {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.room-warning {
+  font-size: 0.75rem;
+  color: #d4a017;
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.room-card-photo {
+  width: 130px;
+  min-height: 90px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #21262d;
+}
+
+.room-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---------- Slot Grid ---------- */
+.room-slots {
+  padding: 0.6rem 0.75rem;
+}
+
+.slot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.slot-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: default;
+  border: 1.5px solid;
+  min-width: 56px;
+}
+
+.slot-btn.available {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.slot-btn.blocked {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.slot-btn.closed {
+  background: rgba(139, 148, 158, 0.1);
+  border-color: #484f58;
+  color: #484f58;
+}
+
+/* No slots banner */
+.no-slots-banner {
+  text-align: center;
+  padding: 0.5rem;
+  color: #ef4444;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* ---------- Footer ---------- */
+.footer {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-top: 1px solid #21262d;
+  font-size: 0.78rem;
+}
+
+.footer-note {
+  color: #8b949e;
+}
+
+.browser-link {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #d4a017;
+  border-radius: 6px;
+  color: #d4a017;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.78rem;
+  transition: all 0.15s;
+}
+
+.browser-link:hover {
+  background: #d4a017;
+  color: #0d1117;
+}
+
+/* ---------- Empty State ---------- */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #484f58;
+  font-size: 0.9rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .header-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .header-right {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-picker {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .date-picker input[type="date"] {
+    flex: 1;
+  }
+
+  .room-card-header {
+    flex-direction: column;
+  }
+
+  .room-card-photo {
+    width: 100%;
+    max-height: 120px;
+  }
+
+  .footer {
+    flex-direction: column;
+    text-align: center;
+  }
+}
