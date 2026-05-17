@@ -31,14 +31,14 @@
         <button class="tab" data-type="Collaboration Rooms">Collaboration Rooms</button>
         <button class="tab" data-type="Paid Rental">Paid Rentals</button>
       </div>
-<div class="date-picker">
+      <div class="date-picker">
         <label for="date-input">Week of</label>
         <input type="date" id="date-input">
         <button class="refresh-btn" id="refresh-btn">Refresh</button>
       </div>
     </div>
 
-    <div class="loading" id="loading">Loading availability...</div>
+    <div class="loading" id="loading">Loading availability<span class="loading-hint">This may take up to a minute on the first load.</span></div>
     <div class="error hidden" id="error">
       Could not load availability data.
       <button onclick="fetchAvailability(dateInput.value)">Retry</button>
@@ -91,10 +91,6 @@
       fetchAvailability(dateInput.value, true);
     });
 
-    refreshBtn.addEventListener("click", () => {
-      fetchAvailability(dateInput.value, true);
-    });
-
     function getWeekDays(dateStr) {
       const d = new Date(dateStr + "T12:00:00");
       const todayStr = new Date().toISOString().split("T")[0];
@@ -117,7 +113,8 @@
       return days;
     }
 
-    function fetchAvailability(dateStr, refresh) {
+    function fetchAvailability(dateStr, refresh, retries) {
+      if (retries === undefined) retries = 0;
       loadingEl.classList.remove("hidden");
       errorEl.classList.add("hidden");
       dayContentEl.classList.add("hidden");
@@ -129,9 +126,13 @@
       let url = `/api/availability?date=${dateStr}`;
       if (refresh) url += "&refresh=1";
 
-      fetch(url)
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000);
+
+      fetch(url, { signal: controller.signal })
         .then(r => r.json())
         .then(data => {
+          clearTimeout(timeout);
           loadingEl.classList.add("hidden");
           refreshBtn.disabled = false;
           allData = data;
@@ -139,10 +140,16 @@
           renderActiveDay();
         })
         .catch(err => {
-          loadingEl.classList.add("hidden");
-          refreshBtn.disabled = false;
-          errorEl.classList.remove("hidden");
-          console.error(err);
+          clearTimeout(timeout);
+          if (retries < 3) {
+            const delay = (retries + 1) * 3000;
+            setTimeout(() => fetchAvailability(dateStr, refresh, retries + 1), delay);
+          } else {
+            loadingEl.classList.add("hidden");
+            refreshBtn.disabled = false;
+            errorEl.classList.remove("hidden");
+            console.error(err);
+          }
         });
     }
 
