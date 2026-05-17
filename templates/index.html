@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Room Availability - Cedar Park Public Library</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <h1 class="library-name">Cedar Park Public Library</h1>
+        <p class="library-subtitle">Room Availability</p>
+      </div>
+      <div class="header-right">
+        <button class="debug-btn" id="debug-btn">Debug</button>
+        <div class="day-tabs" id="day-tabs"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="summary-banner" id="summary-banner">
+    <span id="summary-text">Loading availability...</span>
+  </div>
+
+  <main class="container">
+    <div class="controls">
+      <div class="room-types" id="room-type-tabs">
+        <button class="tab active" data-type="all">All Rooms</button>
+        <button class="tab" data-type="Collaboration Rooms">Collaboration Rooms</button>
+        <button class="tab" data-type="Paid Rental">Paid Rentals</button>
+      </div>
+<div class="date-picker">
+        <label for="date-input">Week of</label>
+        <input type="date" id="date-input">
+        <button class="refresh-btn" id="refresh-btn">Refresh</button>
+      </div>
+    </div>
+
+    <div class="loading" id="loading">Loading availability...</div>
+    <div class="error hidden" id="error">
+      Could not load availability data.
+      <button onclick="fetchAvailability(dateInput.value)">Retry</button>
+    </div>
+
+    <div class="day-content hidden" id="day-content"></div>
+  </main>
+
+  <footer class="footer">
+    <span class="footer-note">Rooms may be closed or unavailable on this day.</span>
+    <a href="#" class="browser-link" id="browser-link" target="_blank" rel="noopener">Open schedule in browser window</a>
+  </footer>
+
+  <script>
+    const ROOMS = {{ rooms | tojson }};
+    const BASE = "https://cedarparkpl.librarycalendar.com";
+
+    const dateInput = document.getElementById("date-input");
+    const loadingEl = document.getElementById("loading");
+    const errorEl = document.getElementById("error");
+    const dayTabsEl = document.getElementById("day-tabs");
+    const dayContentEl = document.getElementById("day-content");
+    const summaryText = document.getElementById("summary-text");
+    const typeTabs = document.querySelectorAll(".tab");
+    const debugBtn = document.getElementById("debug-btn");
+    const browserLink = document.getElementById("browser-link");
+    const refreshBtn = document.getElementById("refresh-btn");
+
+    let currentFilter = "all";
+    let allData = null;
+    let weekDays = [];
+
+    const today = new Date();
+    dateInput.value = today.toISOString().split("T")[0];
+
+    typeTabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        typeTabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        currentFilter = tab.dataset.type;
+        renderActiveDay();
+      });
+    });
+
+    dateInput.addEventListener("change", () => {
+      fetchAvailability(dateInput.value);
+    });
+
+    refreshBtn.addEventListener("click", () => {
+      fetchAvailability(dateInput.value, true);
+    });
+
+    refreshBtn.addEventListener("click", () => {
+      fetchAvailability(dateInput.value, true);
+    });
+
+    function getWeekDays(dateStr) {
+      const d = new Date(dateStr + "T12:00:00");
+      const todayStr = new Date().toISOString().split("T")[0];
+      const days = [];
+      for (let i = -3; i <= 3; i++) {
+        const dd = new Date(d);
+        dd.setDate(d.getDate() + i);
+        const ds = dd.toISOString().split("T")[0];
+        let type = "future";
+        if (ds === todayStr) type = "today";
+        else if (ds < todayStr) type = "past";
+        days.push({
+          dateStr: ds,
+          dayName: dd.toLocaleDateString("en-US", { weekday: "short" }),
+          monthDay: dd.toLocaleDateString("en-US", { month: "numeric", day: "numeric" }),
+          monthShort: dd.toLocaleDateString("en-US", { month: "short" }),
+          type: type,
+        });
+      }
+      return days;
+    }
+
+    function fetchAvailability(dateStr, refresh) {
+      loadingEl.classList.remove("hidden");
+      errorEl.classList.add("hidden");
+      dayContentEl.classList.add("hidden");
+      refreshBtn.disabled = true;
+
+      weekDays = getWeekDays(dateStr);
+      setActiveDayIndexFromDate(dateStr);
+
+      let url = `/api/availability?date=${dateStr}`;
+      if (refresh) url += "&refresh=1";
+
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          loadingEl.classList.add("hidden");
+          refreshBtn.disabled = false;
+          allData = data;
+          renderDayTabs();
+          renderActiveDay();
+        })
+        .catch(err => {
+          loadingEl.classList.add("hidden");
+          refreshBtn.disabled = false;
+          errorEl.classList.remove("hidden");
+          console.error(err);
+        });
+    }
+
+    let activeDayIndex = 0;
+
+    function setActiveDayIndexFromDate(dateStr) {
+      activeDayIndex = 3;
+    }
+
+    function renderDayTabs() {
+      let html = "";
+      weekDays.forEach((day, i) => {
+        const active = i === activeDayIndex ? 'active' : '';
+        html += `<button class="day-tab ${active}" data-index="${i}">${day.dayName}<span class="day-tab-date">${day.monthShort} ${day.monthDay.split("/")[1]}</span></button>`;
+      });
+      dayTabsEl.innerHTML = html;
+      dayTabsEl.querySelectorAll(".day-tab").forEach(tab => {
+        tab.addEventListener("click", () => switchDayTab(parseInt(tab.dataset.index)));
+      });
+    }
+
+    function getActiveDayIndex() {
+      return activeDayIndex;
+    }
+
+    function switchDayTab(index) {
+      activeDayIndex = index;
+      dayTabsEl.querySelectorAll(".day-tab").forEach(t => t.classList.remove("active"));
+      const tab = dayTabsEl.querySelector(`.day-tab[data-index="${index}"]`);
+      if (tab) tab.classList.add("active");
+      renderActiveDay();
+    }
+
+    function renderActiveDay() {
+      const dayIndex = getActiveDayIndex();
+      const day = weekDays[dayIndex];
+      if (!day) return;
+
+      const dateStr = day.dateStr;
+
+      let rooms = allData.filter(r => {
+        if (currentFilter === "all") return true;
+        return r.type.startsWith(currentFilter) || r.type === currentFilter;
+      });
+
+      const typeLabel = day.type === "today" ? "Today" : day.type === "past" ? "Past" : "Upcoming";
+
+      let html = `<h2 class="day-heading">${day.dayName}, ${day.monthDay}</h2>`;
+      html += `<div class="room-list">`;
+
+      let totalOpenSlots = 0;
+      let hasAnyBlocks = false;
+
+      rooms.forEach(room => {
+        const blocks = room.availability[dateStr];
+        if (!blocks || blocks.length === 0) return;
+
+        hasAnyBlocks = true;
+        let roomOpen = 0;
+        let roomTaken = 0;
+
+        blocks.forEach(b => {
+          if (b.status === "available") roomOpen += b.slots_total;
+          else if (b.status === "partial") roomOpen += b.slots_available;
+          roomTaken += (b.slots_total - (b.status === "available" ? b.slots_total : b.status === "partial" ? b.slots_available : 0));
+        });
+
+        totalOpenSlots += roomOpen;
+
+        let roomDesc = room.type;
+        const floorParts = room.name.match(/(\d+(?:st|nd|rd|th) Floor,? \d+ people)/i);
+        if (floorParts) roomDesc = floorParts[1];
+
+        const isRoom140 = room.name.startsWith("140");
+
+        html += `<div class="room-card">
+          <div class="room-card-header">
+            <div class="room-card-info">
+              <a href="${BASE}${room.url}" target="_blank" rel="noopener" class="room-name">${room.name}</a>`;
+
+        html += `<div class="room-type-label">${roomDesc}</div>`;
+
+        html += `<div class="room-card-badges">`;
+        if (roomOpen > 0) {
+          html += `<span class="status-badge open">${roomOpen} open</span>`;
+          html += `<span class="status-badge taken">${roomTaken} taken</span>`;
+        } else {
+          html += `<span class="status-badge none">No open slots available</span>`;
+        }
+        html += `</div>`;
+
+        if (isRoom140) {
+          html += `<div class="room-warning">&#9888; Monitor currently not working</div>`;
+        }
+
+        html += `</div>`;
+
+        if (room.image) {
+          html += `<div class="room-card-photo"><img src="${room.image}" alt="" loading="lazy"></div>`;
+        }
+
+        html += `</div>`;
+
+        html += `<div class="room-slots">`;
+        if (roomOpen > 0) {
+          const availSlots = [];
+          const blockedSlots = [];
+          blocks.forEach(block => {
+            if (block.slots && block.slots.length > 0) {
+              block.slots.forEach(s => {
+                if (s.status === "available") {
+                  availSlots.push(s);
+                } else {
+                  blockedSlots.push(s);
+                }
+              });
+            }
+          });
+          if (availSlots.length > 0) {
+            html += `<div class="slot-grid">`;
+            availSlots.forEach(s => {
+              html += `<span class="slot-btn available">${s.time}</span>`;
+            });
+            html += `</div>`;
+            if (blockedSlots.length > 0) html += `<br>`;
+          }
+          if (blockedSlots.length > 0) {
+            html += `<div class="slot-grid">`;
+            blockedSlots.forEach(s => {
+              html += `<span class="slot-btn blocked">${s.time}</span>`;
+            });
+            html += `</div>`;
+          }
+        } else {
+          html += `<div class="no-slots-banner">No open slots available</div>`;
+        }
+        html += `</div></div>`;
+      });
+
+      if (!hasAnyBlocks) {
+        html += `<div class="empty-state">No availability data for this day.</div>`;
+      }
+
+      html += `</div>`;
+      dayContentEl.innerHTML = html;
+      dayContentEl.classList.remove("hidden");
+
+      summaryText.textContent = `${rooms.length} rooms and ${totalOpenSlots} open slots available across the library`;
+
+      const firstRoom = rooms.find(r => r.availability[dateStr] && r.availability[dateStr].length > 0);
+      if (firstRoom) {
+        browserLink.href = `${BASE}${firstRoom.url}`;
+      }
+    }
+
+    debugBtn.addEventListener("click", () => {
+      console.log("Rooms:", ROOMS);
+      console.log("Availability:", allData);
+      console.log("Week days:", weekDays);
+    });
+
+    fetchAvailability(dateInput.value);
+  </script>
+</body>
+</html>
