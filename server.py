@@ -156,88 +156,91 @@ def scrape_availability(room_url: str, target_date: Optional[datetime] = None, r
         today = datetime.now()
         week_days = {}
 
-        fetch_str = target_date.strftime("%Y-%m-%d")
-        full_url = f"{BASE_URL}{room_url}?selected_date={fetch_str}"
-        try:
-            resp = _http.get(full_url, timeout=15)
-            resp.raise_for_status()
-        except Exception:
-            return week_days
+        def fetch(offset):
+            d = target_date + timedelta(days=offset)
+            url = f"{BASE_URL}{room_url}?selected_date={d.strftime('%Y-%m-%d')}"
+            try:
+                r = _http.get(url, timeout=15)
+                r.raise_for_status()
+                return r.text, d
+            except Exception:
+                return None, d
 
-        soup = BeautifulSoup(resp.text, "html.parser")
-        day_containers = soup.select(".lc-reservation-openings")
-
-        for container in day_containers:
-            heading = container.find("h3")
-            if heading:
-                heading_text = heading.get_text(strip=True)
-                m = re.match(r"(\w+)\s*-\s*(\d{1,2})/(\d{1,2})", heading_text)
-                if not m:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            for html, fetch_date in pool.map(fetch, [0, 3]):
+                if html is None:
                     continue
-                month_s, day_s = m.group(2), m.group(3)
-                year = target_date.year
-                month = int(month_s)
-                day_i = int(day_s)
-                day_parsed = datetime(year, month, day_i)
-                if abs((day_parsed - target_date).days) > 60:
-                    if day_parsed > target_date:
-                        day_parsed = datetime(year - 1, month, day_i)
+
+                soup = BeautifulSoup(html, "html.parser")
+                for container in soup.select(".lc-reservation-openings"):
+                    heading = container.find("h3")
+                    if heading:
+                        heading_text = heading.get_text(strip=True)
+                        m = re.match(r"(\w+)\s*-\s*(\d{1,2})/(\d{1,2})", heading_text)
+                        if not m:
+                            continue
+                        month_s, day_s = m.group(2), m.group(3)
+                        year = fetch_date.year
+                        month = int(month_s)
+                        day_i = int(day_s)
+                        day_parsed = datetime(year, month, day_i)
+                        if abs((day_parsed - fetch_date).days) > 60:
+                            if day_parsed > fetch_date:
+                                day_parsed = datetime(year - 1, month, day_i)
+                            else:
+                                day_parsed = datetime(year + 1, month, day_i)
                     else:
-                        day_parsed = datetime(year + 1, month, day_i)
-            else:
-                day_parsed = today
+                        day_parsed = today
 
-            day_key = day_parsed.strftime("%Y-%m-%d")
-            if day_key in week_days:
-                continue
+                    day_key = day_parsed.strftime("%Y-%m-%d")
+                    if day_key in week_days:
+                        continue
 
-            hours_data = []
-            for hour_el in container.select(".lc-reservation-openings-hour"):
-                quarters = hour_el.select(".lc-reservation-openings-quarter")
-                if not quarters:
-                    continue
+                    hours_data = []
+                    for hour_el in container.select(".lc-reservation-openings-hour"):
+                        quarters = hour_el.select(".lc-reservation-openings-quarter")
+                        if not quarters:
+                            continue
 
-                total = len(quarters)
-                slots = []
-                for q in quarters:
-                    q_time_el = q.select_one(
-                        ".lc-reservation-openings-time--quarter"
-                    )
-                    q_time = q_time_el.get_text(strip=True) if q_time_el else ""
-                    q_avail = "lc-reservation-openings-quarter--available" in q.get(
-                        "class", []
-                    )
-                    q_status = "available" if q_avail else "blocked"
-                    slots.append({"time": q_time, "status": q_status})
+                        total = len(quarters)
+                        slots = []
+                        for q in quarters:
+                            q_time_el = q.select_one(
+                                ".lc-reservation-openings-time--quarter"
+                            )
+                            q_time = q_time_el.get_text(strip=True) if q_time_el else ""
+                            q_avail = "lc-reservation-openings-quarter--available" in q.get("class", [])
+                            q_status = "available" if q_avail else "blocked"
+                            slots.append({"time": q_time, "status": q_status})
 
-                available = sum(1 for s in slots if s["status"] == "available")
+                        available = sum(1 for s in slots if s["status"] == "available")
 
-                first_time_el = quarters[0].select_one(
-                    ".lc-reservation-openings-time--quarter"
-                )
-                last_time_el = quarters[-1].select_one(
-                    ".lc-reservation-openings-time--quarter"
-                )
-                time_start = first_time_el.get_text(strip=True) if first_time_el else ""
-                time_end = last_time_el.get_text(strip=True) if last_time_el else ""
+                        first_time_el = quarters[0].select_one(
+                            ".lc-reservation-openings-time--quarter"
+                        )
+                        last_time_el = quarters[-1].select_one(
+                            ".lc-reservation-openings-time--quarter"
+                        )
+                        time_start = first_time_el.get_text(strip=True) if first_time_el else ""
+                        time_end = last_time_el.get_text(strip=True) if last_time_el else ""
 
-                if available == total:
-                    status = "available"
-                elif available == 0:
-                    status = "blocked"
-                else:
-                    status = "partial"
+                        if available == total:
+                            status = "available"
+                        elif available == 0:
+                            status = "blocked"
+                        else:
+                            status = "partial"
 
-                hours_data.append({
-                    "time": time_start,
-                    "time_end": time_end,
-                    "slots_available": available,
-                    "slots_total": total,
-                    "status": status,
-                    "slots": slots,
-                })
+                        hours_data.append({
+                            "time": time_start,
+                            "time_end": time_end,
+                            "slots_available": available,
+                            "slots_total": total,
+                            "status": status,
+                            "slots": slots,
+                        })
 
-            week_days[day_key] = hours_data
+                    week_days[day_key] = hours_data
 
         _cache_set(cache_key, week_days, ttl=AVAIL_TTL)
         return week_days
