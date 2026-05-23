@@ -79,13 +79,16 @@ def main():
     run(["git", "add", "-A"])
     r = run(["git", "commit", "-m", msg], check=False)
     if r.returncode != 0:
-        if "nothing to commit" in (r.stderr + r.stdout):
-            print("Nothing to commit — working tree clean.")
-        else:
+        if "nothing to commit" not in (r.stderr + r.stdout):
             print(r.stderr)
-        sys.exit(1)
+            sys.exit(1)
 
     branch = run(["git", "rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip()
+
+    unpushed = run(["git", "log", "--oneline", f"@{{u}}..HEAD"], check=False)
+    if not unpushed.stdout.strip() and r.returncode != 0:
+        print("Everything up-to-date — nothing new to commit or push.")
+        sys.exit(0)
 
     if not test_push(REMOTE_NAME, branch):
         print("\nPush failed — authentication issue.")
