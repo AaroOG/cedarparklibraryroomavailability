@@ -170,7 +170,7 @@ def scrape_availability(room_url: str, target_date: Optional[datetime] = None, r
             day_containers = soup.select(".lc-reservation-openings")
 
             for container in day_containers:
-                heading = container.find("h3")
+                heading = container.find_previous("h3")
                 if heading:
                     heading_text = heading.get_text(strip=True)
                     m = re.match(r"(\w+)\s*-\s*(\d{1,2})/(\d{1,2})", heading_text)
