@@ -167,8 +167,6 @@ body {
   color: #f0f6fc;
 }
 
-<<<<<<< HEAD
-=======
 .search-box {
   flex: 1;
   min-width: 160px;
@@ -195,7 +193,6 @@ body {
   color: #484f58;
 }
 
->>>>>>> c12f861 (search rooms and organization fix)
 .date-picker {
   display: flex;
   align-items: center;

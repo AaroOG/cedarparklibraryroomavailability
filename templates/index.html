@@ -31,12 +31,9 @@
         <button class="tab" data-type="Collaboration Rooms">Collaboration Rooms</button>
         <button class="tab" data-type="Paid Rental">Paid Rentals</button>
       </div>
-<<<<<<< HEAD
-=======
-      <div class="search-box">
+<div class="search-box">
         <input type="text" id="search-input" placeholder="Search rooms..." class="search-input">
       </div>
->>>>>>> c12f861 (search rooms and organization fix)
       <div class="date-picker">
         <label for="date-input">Week of</label>
         <input type="date" id="date-input">
@@ -72,15 +69,10 @@
     const debugBtn = document.getElementById("debug-btn");
     const browserLink = document.getElementById("browser-link");
     const refreshBtn = document.getElementById("refresh-btn");
-<<<<<<< HEAD
-
-    let currentFilter = "all";
-=======
     const searchInput = document.getElementById("search-input");
 
     let currentFilter = "all";
     let searchQuery = "";
->>>>>>> c12f861 (search rooms and organization fix)
     let allData = null;
     let weekDays = [];
 
@@ -104,14 +96,11 @@
       fetchAvailability(dateInput.value, true);
     });
 
-<<<<<<< HEAD
-=======
     searchInput.addEventListener("input", () => {
       searchQuery = searchInput.value.trim().toLowerCase();
       renderActiveDay();
     });
 
->>>>>>> c12f861 (search rooms and organization fix)
     function getWeekDays(dateStr) {
       const d = new Date(dateStr + "T12:00:00");
       const todayStr = new Date().toISOString().split("T")[0];
@@ -212,14 +201,9 @@
       const dateStr = day.dateStr;
 
       let rooms = allData.filter(r => {
-<<<<<<< HEAD
-        if (currentFilter === "all") return true;
-        return r.type.startsWith(currentFilter) || r.type === currentFilter;
-=======
         if (currentFilter !== "all" && !r.type.startsWith(currentFilter) && r.type !== currentFilter) return false;
         if (searchQuery && !r.name.toLowerCase().includes(searchQuery)) return false;
         return true;
->>>>>>> c12f861 (search rooms and organization fix)
       });
 
       const typeLabel = day.type === "today" ? "Today" : day.type === "past" ? "Past" : "Upcoming";
