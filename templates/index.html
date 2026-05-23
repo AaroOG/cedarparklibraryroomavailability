@@ -41,7 +41,15 @@
       </div>
     </div>
 
-    <div class="loading" id="loading">Loading availability<span class="loading-hint">This may take up to a minute on the first load.</span></div>
+    <div class="loading" id="loading">
+      <div class="loading-text">Loading availability</div>
+      <div class="loading-dots">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+      <div class="loading-hint">This may take up to a minute on the first load.</div>
+    </div>
     <div class="error hidden" id="error">
       Could not load availability data.
       <button onclick="fetchAvailability(dateInput.value)">Retry</button>
